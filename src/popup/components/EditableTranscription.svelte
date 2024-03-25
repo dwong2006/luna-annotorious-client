@@ -40,7 +40,7 @@
 {#if isEditable}
   <input 
     bind:this={inputEl} 
-    value={transcription?.value}
+    value={transcription?.value ?? ''}
     spellcheck={false} 
     on:keyup={onKeyUp} />
 {:else}

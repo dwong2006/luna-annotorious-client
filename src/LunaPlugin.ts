@@ -27,6 +27,12 @@ export class LunaPlugin {
       }
     });
 
+    anno.on('endSelection', (pt) => {
+      console.log('endselection');
+      this.showPopup({}, pt);
+      
+    });
+
     document.addEventListener('keydown', (evt: KeyboardEvent) => {
       if (evt.key === 'Escape') {
         // Cancel on Escape key
@@ -48,10 +54,15 @@ export class LunaPlugin {
       props: { 
         annotation,
         originalEvent,
-        env: this.anno.env,
-        opts: this.opts
+        user: this.anno.getUser(),
+        opts: this.opts,
+        state: this.anno.state,
+        viewer: this.anno.viewer,
+        editable: true
       }
     });
+
+    this.popup.setPosition(annotation.id);
 
     this.popup.$on('confirm', (evt: CustomEvent<WebAnnotation>) => {
       this.isEditing = false;
@@ -77,7 +88,8 @@ export class LunaPlugin {
         }
       }
 
-      this.anno.updateAnnotation(evt.detail.id, updated);
+      //this.anno.updateAnnotation(evt.detail.id, updated);
+      this.anno.updateAnnotation(updated);
     });
 
     this.popup.$on('cancel', () => {

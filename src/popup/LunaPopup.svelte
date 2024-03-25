@@ -1,11 +1,13 @@
 <script type="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount, getContext } from 'svelte';
   import { draggable } from '@neodrag/svelte';
   import Icon from 'svelte-icons-pack/Icon.svelte';
   import FaSolidRobot from 'svelte-icons-pack/fa/FaSolidRobot';
   import FaTrashAlt from 'svelte-icons-pack/fa/FaTrashAlt';
   import FiChevronDown from 'svelte-icons-pack/fi/FiChevronDown';
-  import type { Env } from '@annotorious/annotorious';
+  import OpenSeadragon from 'openseadragon';
+  import type { Selection, StoreChangeEvent, SvelteAnnotatorState, SvelteAnnotator } from '@annotorious/core';
+  import type { Env, ImageAnnotatorState } from '@annotorious/annotorious';
   import type { WebAnnotation } from '@annotorious/formats';
   import EditableTranscription from './components/EditableTranscription.svelte';
   import TranscriptionList from './components/TranscriptionList.svelte';
@@ -13,16 +15,38 @@
   import InstructionsPrompt from './components/InstructionsPrompt.svelte';
   import { getTranscriptions, getBestTranscription, isVerified, isOCR } from './utils';
   import type { LunaPluginOpts } from '../LunaPluginOpts';
+  import type { User } from '@annotorious/core';
 
   const dispatch = createEventDispatcher();
+
+  //export let state: SvelteAnnotatorState<WebAnnotation>;
+    
+  export let viewer: OpenSeadragon.Viewer;
 
   export let annotation: WebAnnotation;
 
   export let originalEvent: PointerEvent;
 
-  export let env: typeof Env;
+  //export let env: typeof Env;
+
+  export let user: User;
 
   export let opts: LunaPluginOpts;
+
+  export let state: SvelteAnnotatorState;
+
+  export let editable: boolean;
+  
+
+  let left: number;
+
+  let top: number;
+
+  //const { store, hover } = anno.state;
+
+  const { store } = state; 
+
+  //const isSelected = (selection: Selection) => selection.selected?.length > 0;
 
   let isEditable = false;
 
@@ -32,6 +56,8 @@
 
   let showConfirmDelete = false;
 
+  let storeObserver: (event: StoreChangeEvent<WebAnnotation>) => void;
+
   $: transcriptions = getTranscriptions(originalAnnotation);
 
   $: bestTranscription = getBestTranscription(transcriptions);
@@ -40,8 +66,12 @@
 
   $: showInstructions = !(opts.readOnly || verified || !isOCR(bestTranscription));
 
+  if( editable )
+    isEditable = true;
+
   const onTranscriptionChanged = evt => {
-    const bodies = Array.isArray(originalAnnotation.body) ? originalAnnotation.body : [ originalAnnotation.body ];
+    const bodies = Array.isArray(originalAnnotation.bodies) ? originalAnnotation.bodies : [ originalAnnotation.bodies ];
+    //const bodies = Array.isArray(originalAnnotation.body) ? originalAnnotation.body : [ originalAnnotation.body ];
 
     const changedTranscription = {
       type: 'TextualBody',
@@ -49,14 +79,19 @@
       value: evt.detail,
       creator: {
         type: 'Person',
-        name: 'displayName' in env.currentUser ? env.currentUser.displayName : env.currentUser.id 
+        name: 'name' in user ? user.name : user.id 
       },
-      created: env.getCurrentTimeAdjusted()
+      created: new Date()
     };
+
+    /*annotation = {
+      ...originalAnnotation,
+      body: [...bodies, changedTranscription ]
+    };*/
 
     annotation = {
       ...originalAnnotation,
-      body: [...bodies, changedTranscription ]
+      bodies: [...bodies, changedTranscription ]
     };
   }
 
@@ -84,6 +119,61 @@
     dispatch('edit');
   }
 
+  /*$: $selection, onSelect();
+
+  const onSelect = () => {
+    if (storeObserver)
+      store.unobserve(storeObserver);
+
+    if (isSelected($selection)) {
+
+      setPosition($selection);
+
+      storeObserver = (event: StoreChangeEvent<WebAnnotation>) => {
+        setPosition($selection);
+      }
+
+      store.observe(storeObserver, { annotations: $selection.selected.map(s => s.id) });
+    }
+  }
+
+  const setPosition = (selection: Selection) => {
+    const selectedId = selection.selected[0].id;
+    const annotation = store.getAnnotation(selectedId);
+
+    const { minX, minY, maxX, maxY } = annotation.target.selector.geometry.bounds;
+
+    const PADDING = 14;
+
+    const topLeft = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(minX, minY));
+    const bottomRight = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(maxX, maxY));
+
+    left = bottomRight.x + PADDING;
+    top = topLeft.y;
+  }*/
+
+  export const setPosition = (id: string) => {
+    const annotation = store.getAnnotation(id);
+
+    const { minX, minY, maxX, maxY } = annotation.target.selector.geometry.bounds;
+
+    const PADDING = 14;
+
+    const viewerTop = viewer.element.getBoundingClientRect().top;
+    const viewerLeft = viewer.element.getBoundingClientRect().left;
+    console.log("viewerLeft: " + viewerLeft + " viewerTop: " + viewerTop);
+
+    const topLeft = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(minX, minY));
+    const bottomRight = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(maxX, maxY));
+    console.log("topLeft: " + topLeft + " bottomRight: " + bottomRight);
+
+    // [left, top] = defaultStrategy(annotation, lastPointerDown);
+    left = viewerLeft + bottomRight.x + PADDING;
+    top = viewerTop + topLeft.y;
+
+    console.log("left: " + left + " top: " + top);
+  }
+
   const confirm = () => {
     const bodies = Array.isArray(originalAnnotation.body) ? originalAnnotation.body : [ originalAnnotation.body ];
 
@@ -109,12 +199,29 @@
 
     dispatch('confirm', confirmedAnnotation);
   }
+
+  onMount(() => {
+    const onUpdateViewport = () => {
+      setPosition(annotation.id);
+    }
+
+    viewer.addHandler('update-viewport', onUpdateViewport);
+
+    return () => {
+      viewer.removeHandler('update-viewport', onUpdateViewport);
+    }
+  });
+
 </script>
+
+
 
 <div 
   class="r8s-hover" 
   class:editable={isEditable} use:draggable
-  style={`top: ${originalEvent.offsetY}px; left: ${originalEvent.offsetX}px`}>
+  style={`top: ${originalEvent ? originalEvent.offsetY : top}px; left: ${originalEvent ? originalEvent.offsetX : left}px`}
+>
+
 
   <div class="r8s-hover-content">
     <EditableTranscription 
