@@ -14,8 +14,11 @@
       }
     </style>
     <script type="module">
-      import Annotorious, { OpenSeadragon } from '@annotorious/openseadragon/test/index.ts';
+      import OpenSeadragon from 'openseadragon';
+      import { createOSDAnnotator, W3CImageFormat } from '@annotorious/openseadragon';
       import LunaPlugin from '../src/index.ts';
+
+      import '@annotorious/openseadragon/annotorious-openseadragon.css';
 
       window.onload = function () {
         var viewer = OpenSeadragon({
@@ -33,8 +36,9 @@
           }
         });
 
-        var anno = Annotorious.init(viewer, {
-          pointerSelection: false
+        var anno = createOSDAnnotator(viewer, {
+          adapter: W3CImageFormat('map.jpg'),
+          pointerSelectAction: 'NONE'
         });
 
         var luna = new LunaPlugin(anno, {
@@ -44,7 +48,9 @@
 
         anno.loadAnnotations('annotations.w3c.json');
 
-        anno.setAuthInfo({
+        anno.setDrawingEnabled(true);
+
+        anno.setUser({
           id: 'aboutgeo',
           displayName: 'Rainer Simon'
         });

@@ -1,36 +1,41 @@
-import type Annotorious from '@annotorious/openseadragon';
-import type { WebAnnotation } from '@annotorious/formats';
+import type { OpenSeadragonAnnotator, W3CAnnotation } from '@annotorious/openseadragon';
 import { LunaPopup } from './popup';
 import type { LunaPluginOpts } from './LunaPluginOpts';
 
 export class LunaPlugin {
 
-  anno: Annotorious;
+  anno: OpenSeadragonAnnotator<W3CAnnotation>;
 
   opts: LunaPluginOpts;
 
-  popup: LunaPopup;
+  popup: LunaPopup | undefined;
   
-  isEditing: boolean;
+  isEditing: boolean | undefined;
 
-  constructor(anno: Annotorious, opts: LunaPluginOpts = {}) {
+  beforeEdit: W3CAnnotation | undefined;
+
+  constructor(anno: OpenSeadragonAnnotator<W3CAnnotation>, opts: LunaPluginOpts = {}) {
     this.anno = anno;
 
     this.opts = opts;
 
-    anno.on('pointerdown', (annotation, evt) => {
+    let lastEvent: PointerEvent;
+
+    document.body.addEventListener('pointermove', event => lastEvent = event);
+
+    anno.on('clickAnnotation', (annotation, evt) => {
+      console.log('click', annotation, evt);
       if (!this.isEditing) {  
-        if (annotation)
+        if (annotation) {
           this.showPopup(annotation, evt);
-        else
+        } else {
           this.hidePopup();
+        }
       }
     });
 
-    anno.on('endSelection', (pt) => {
-      console.log('endselection');
-      this.showPopup({}, pt);
-      
+    anno.on('createAnnotation', (annotation) => {
+      this.showPopup(annotation, lastEvent);
     });
 
     document.addEventListener('keydown', (evt: KeyboardEvent) => {
@@ -40,12 +45,14 @@ export class LunaPlugin {
 
         this.hidePopup();
 
-        this.anno.deselectAll();
+        this.anno.setSelected();
       }
     });
   }
 
-  showPopup = (annotation: WebAnnotation, originalEvent: PointerEvent) => {
+  showPopup = (annotation: W3CAnnotation, originalEvent: PointerEvent) => {
+    this.beforeEdit = annotation;
+
     if (this.popup)
       this.hidePopup();
   
@@ -69,10 +76,10 @@ export class LunaPlugin {
 
       this.hidePopup();
 
-      this.anno.updateAnnotation(evt.detail.id, evt.detail);
+      this.anno.updateAnnotation(evt.detail);
     });
 
-    this.popup.$on('save', (evt: CustomEvent<WebAnnotation>) => {
+    this.popup.$on('save', (evt: CustomEvent<W3CAnnotation>) => {
       this.isEditing = false;
 
       this.hidePopup();
@@ -95,15 +102,17 @@ export class LunaPlugin {
     this.popup.$on('cancel', () => {
       this.isEditing = false;
 
-      this.hidePopup();
+      // Revert changes
+      this.anno.updateAnnotation(this.beforeEdit);
 
-      this.anno.deselectAll();
+      this.hidePopup();
+      this.anno.setSelected();
     });
 
     this.popup.$on('edit', () => {
       this.isEditing = true;
 
-      this.anno.selectAnnotation(annotation);
+      this.anno.setSelected(annotation.id);
     });
 
     this.popup.$on('delete', () => {
@@ -116,9 +125,11 @@ export class LunaPlugin {
   }
 
   hidePopup = () => {
+    this.beforeEdit = undefined;
+
     if (this.popup) {
       this.popup.$destroy();
-      this.popup = null;
+      this.popup = undefined;
     } 
   }
 

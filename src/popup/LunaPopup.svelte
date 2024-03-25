@@ -1,4 +1,4 @@
-<script type="ts">
+<script lang="ts">
   import { createEventDispatcher, onMount, getContext } from 'svelte';
   import { draggable } from '@neodrag/svelte';
   import Icon from 'svelte-icons-pack/Icon.svelte';
@@ -73,11 +73,14 @@
     const bodies = Array.isArray(originalAnnotation.bodies) ? originalAnnotation.bodies : [ originalAnnotation.bodies ];
     //const bodies = Array.isArray(originalAnnotation.body) ? originalAnnotation.body : [ originalAnnotation.body ];
 
-    const changedTranscription = {
+    const currentUser = anno.getUser();
+
+    const changedTranscription: W3CAnnotationBody = {
       type: 'TextualBody',
       purpose: 'transcribing',
       value: evt.detail,
       creator: {
+        id: currentUser.id,
         type: 'Person',
         name: 'name' in user ? user.name : user.id 
       },
@@ -104,7 +107,7 @@
   }
 
   const onCancelEdit = () => {
-    dispatch('cancel', annotation);
+    dispatch('cancel', originalAnnotation);
     
     annotation = originalAnnotation;
     
@@ -177,15 +180,18 @@
   const confirm = () => {
     const bodies = Array.isArray(originalAnnotation.body) ? originalAnnotation.body : [ originalAnnotation.body ];
 
-    const confirmation = {
+    const currentUser = anno.getUser();
+
+    const confirmation: W3CAnnotationBody = {
       type: 'TextualBody',
       purpose: 'verifying',
       value: bestTranscription?.value,
       creator: {
+        id: currentUser.id,
         type: 'Person',
-        name: 'displayName' in env.currentUser ? env.currentUser.displayName : env.currentUser.id
+        name: currentUser.name
       },
-      created: env.getCurrentTimeAdjusted()
+      created: new Date()
     };
 
     const confirmedAnnotation = {

@@ -1,28 +1,14 @@
-import type { WebAnnotation, WebAnnotationBody } from '@annotorious/formats';
-
-export interface Transcription extends WebAnnotationBody {
-
-  creator: {
-
-    id: string
-    
-    type: string,
-
-    name: string
-  
-  }
-
-}
+import type { W3CAnnotation, W3CAnnotationBody } from '@annotorious/openseadragon';
 
 /** Returns all transcription bodies from this annotation **/
-export const getTranscriptions = (annotation: WebAnnotation): Transcription[] => {
+export const getTranscriptions = (annotation: W3CAnnotation): W3CAnnotationBody[] => {
   const bodies = annotation.body ?
     Array.isArray(annotation.body) ? annotation.body : [ annotation.body ] : [];
 
   const transcriptions = bodies.filter(body =>  (!body.purpose || body.purpose === 'transcribing'));
 
   // Return sorted by time of creation
-  return transcriptions.slice().sort((a, b) => a.created > b.created ? -1 : 1);
+  return transcriptions.slice().sort((a, b) => a.created! > b?.created! ? -1 : 1);
 }
 
 /** 
@@ -32,11 +18,11 @@ export const getTranscriptions = (annotation: WebAnnotation): Transcription[] =>
  * 'Software', name 'mapKurator:ocr'). If there is none, we'll fall back 
  * to the first in the list.
  */
-export const getBestTranscription = (bodies: Transcription[]) => {
-  let best: Transcription;
+export const getBestTranscription = (bodies: W3CAnnotationBody[]) => {
+  let best: W3CAnnotationBody | undefined;
 
   // Sort by timestamp
-  const sorted = bodies.slice().sort((a, b) => a.created < b.created ? 1 : -1);
+  const sorted = bodies.slice().sort((a, b) => a.created! < b.created! ? 1 : -1);
 
   const byPerson = sorted.filter(body => body.creator?.type === 'Person'); 
   if (byPerson.length > 0) {
@@ -46,7 +32,7 @@ export const getBestTranscription = (bodies: Transcription[]) => {
     if (byMK) {
       best = byMK;
     } else {
-      best = sorted.length > 0 ? sorted[0] : null;
+      best = sorted.length > 0 ? sorted[0] : undefined;
     }
   }
 
@@ -59,7 +45,7 @@ export const isOCR = (transcription: Transcription): boolean =>
   transcription.creator?.type === 'Software' &&
   transcription.creator?.name === 'mapKurator:ocr';
 
-export const isVerified = (annotation: WebAnnotation): boolean => {
+export const isVerified = (annotation: W3CAnnotation): boolean => {
   const bodies = annotation.body ?
     Array.isArray(annotation.body) ? annotation.body : [ annotation.body ] : [];
 
