@@ -27,7 +27,7 @@ export class LunaPlugin {
       console.log('click', annotation, evt);
       if (!this.isEditing) {  
         if (annotation) {
-          this.showPopup(annotation, evt);
+          this.showPopup(annotation, evt, false);
         } else {
           this.hidePopup();
         }
@@ -35,7 +35,7 @@ export class LunaPlugin {
     });
 
     anno.on('createAnnotation', (annotation) => {
-      this.showPopup(annotation, lastEvent);
+      this.showPopup(annotation, lastEvent, true);
     });
 
     document.addEventListener('keydown', (evt: KeyboardEvent) => {
@@ -46,15 +46,21 @@ export class LunaPlugin {
         this.hidePopup();
 
         this.anno.setSelected();
+        
+        if (typeof exitEditMode === 'function') {
+          // Call the outside function
+          exitEditMode();
+        } 
       }
     });
   }
 
-  showPopup = (annotation: W3CAnnotation, originalEvent: PointerEvent) => {
-    this.beforeEdit = annotation;
+  showPopup = (annotation: W3CAnnotation, originalEvent: PointerEvent, editable: Boolean) => {
 
     if (this.popup)
       this.hidePopup();
+
+    this.beforeEdit = annotation;
   
     this.popup = new LunaPopup({
       target: document.body,
@@ -65,7 +71,7 @@ export class LunaPlugin {
         opts: this.opts,
         state: this.anno.state,
         viewer: this.anno.viewer,
-        editable: true
+        editable: editable
       }
     });
 
@@ -83,6 +89,11 @@ export class LunaPlugin {
       this.isEditing = false;
 
       this.hidePopup();
+
+      if (typeof exitEditMode === 'function') {
+        // Call the outside function
+        exitEditMode(this.anno);
+      } 
 
       // Merge modified annotation bodies from the popup with
       // latest target from the annotation layer

@@ -41,7 +41,7 @@ export const getBestTranscription = (bodies: W3CAnnotationBody[]) => {
 
 /** Tests if this body represents an OCR transcription **/
 export const isOCR = (transcription: Transcription): boolean => 
-  transcription !== null &&
+  transcription != null &&
   transcription.creator?.type === 'Software' &&
   transcription.creator?.name === 'mapKurator:ocr';
 

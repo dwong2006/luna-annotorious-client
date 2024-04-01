@@ -42,11 +42,7 @@
 
   let top: number;
 
-  //const { store, hover } = anno.state;
-
   const { store } = state; 
-
-  //const isSelected = (selection: Selection) => selection.selected?.length > 0;
 
   let isEditable = false;
 
@@ -87,11 +83,6 @@
       created: new Date()
     };
 
-    /*annotation = {
-      ...originalAnnotation,
-      body: [...bodies, changedTranscription ]
-    };*/
-
     annotation = {
       ...originalAnnotation,
       bodies: [...bodies, changedTranscription ]
@@ -121,39 +112,6 @@
 
     dispatch('edit');
   }
-
-  /*$: $selection, onSelect();
-
-  const onSelect = () => {
-    if (storeObserver)
-      store.unobserve(storeObserver);
-
-    if (isSelected($selection)) {
-
-      setPosition($selection);
-
-      storeObserver = (event: StoreChangeEvent<WebAnnotation>) => {
-        setPosition($selection);
-      }
-
-      store.observe(storeObserver, { annotations: $selection.selected.map(s => s.id) });
-    }
-  }
-
-  const setPosition = (selection: Selection) => {
-    const selectedId = selection.selected[0].id;
-    const annotation = store.getAnnotation(selectedId);
-
-    const { minX, minY, maxX, maxY } = annotation.target.selector.geometry.bounds;
-
-    const PADDING = 14;
-
-    const topLeft = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(minX, minY));
-    const bottomRight = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(maxX, maxY));
-
-    left = bottomRight.x + PADDING;
-    top = topLeft.y;
-  }*/
 
   export const setPosition = (id: string) => {
     const annotation = store.getAnnotation(id);

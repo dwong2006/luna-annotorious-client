@@ -17,9 +17,11 @@
   $: {
     if (isEditable) {
       tick().then(() => {
-        autosizeInput(inputEl);
-        inputEl.focus();
-        inputEl.select();
+        if( inputEl ) {
+          autosizeInput(inputEl);
+          inputEl.focus();
+          inputEl.select();
+        }
       });
     }
   }
