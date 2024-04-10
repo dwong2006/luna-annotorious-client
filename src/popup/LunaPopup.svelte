@@ -122,17 +122,17 @@
 
     const viewerTop = viewer.element.getBoundingClientRect().top;
     const viewerLeft = viewer.element.getBoundingClientRect().left;
-    console.log("viewerLeft: " + viewerLeft + " viewerTop: " + viewerTop);
+    //console.log("viewerLeft: " + viewerLeft + " viewerTop: " + viewerTop);
 
     const topLeft = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(minX, minY));
     const bottomRight = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(maxX, maxY));
-    console.log("topLeft: " + topLeft + " bottomRight: " + bottomRight);
+    //console.log("topLeft: " + topLeft + " bottomRight: " + bottomRight);
 
     // [left, top] = defaultStrategy(annotation, lastPointerDown);
     left = viewerLeft + bottomRight.x + PADDING;
     top = viewerTop + topLeft.y;
 
-    console.log("left: " + left + " top: " + top);
+    //console.log("left: " + left + " top: " + top);
   }
 
   const confirm = () => {
